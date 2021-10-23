@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
       - name: capstone-app
-        image: sirvanci/capstone-app:$CIRCLE_WORKFLOW_ID
+        image: sirvanci/capstone-app:{{ VERSION }}
         ports:
         - containerPort: 80
