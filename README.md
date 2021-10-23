@@ -1,2 +1,2 @@
-First create VPC with `create-vpc-stack.sh`
-I created EKS Cluster on console.aws.amazon.comdd"
+Create VPC with `VPC/create-vpc-stack.sh`
+Create EKS cluster scripts EKS/

@@ -1,0 +1,24 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: capstone-cluster2
+  region: eu-central-1
+ 
+vpc:
+  id: "vpc-068de20d2b5cde0d6"
+  subnets:
+    private:
+      eu-central-1a:
+          id: "subnet-01034519790a11749"
+      eu-central-1b:
+          id: "subnet-040d62834c1410cdd"
+
+nodeGroups:
+  - name: ng-1
+    instanceType: t2.small
+    desiredCapacity: 2
+    privateNetworking: true
+    subnets:
+      - eu-central-1a 
+      - eu-central-1b

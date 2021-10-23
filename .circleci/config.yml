@@ -77,7 +77,7 @@ jobs:
       - kubernetes/install-kubectl
       - run:
           name: Setup kubeconfig
-          command: aws eks update-kubeconfig --region eu-central-1 --name capstone-eks-cluster
+          command: aws eks update-kubeconfig --region eu-central-1 --name capstone-cluster2
       - run:
          name: Start deployment
          command: kubectl apply -f deployment.yaml
@@ -86,7 +86,7 @@ workflows:
     jobs:
       - build-frontend
       - test-frontend:
-          reqiures: [build-frontend]
+          requires: [build-frontend]
       - scan-frontend:
           requires: [build-frontend]
       - build-docker:
