@@ -5,20 +5,70 @@ orbs:
   kubernetes: circleci/kubernetes@0.12.0
 
 jobs:
-  build:
+  build-frontend:
+    docker:
+      - image: circleci/node
+    steps:
+      - checkout
+      - run:
+          name: Install Dependecies & Build
+          command: |
+            cd capstone-rc-frontend
+            npm install  
+            npm run build    
+      - save_cache:
+          paths: [capstone-rc-frontend/node_modules]
+          key: frontend-build-{{ .Environment.CIRCLE_SHA1 }}      
+  test-frontend:
+    docker:
+      - image: circleci/node
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - frontend-build-{{ .Environment.CIRCLE_SHA1 }}
+      - run:
+          name: Run Tests
+          command: |
+            cd capstone-rc-frontend             
+            CI=true npm test   
+  scan-frontend:
+    docker:
+      - image: circleci/node
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - frontend-build-{{ .Environment.CIRCLE_SHA1 }}
+      - run:
+          name: Run Tests
+          command: |
+            cd capstone-rc-frontend             
+            npm audit fix --audit-level=critical --force            
+
+  build-docker:
     docker:
       - image: circleci/node
     steps:
       - checkout
       - setup_remote_docker:
           version: 19.03.13
+      - restore_cache:
+          keys:
+            - frontend-build-{{ .Environment.CIRCLE_SHA1 }}
       - run:
-          name: Build and push Docker image
+          name: Build Docker image
           command: |
             cd capstone-rc-frontend
             docker build -f Dockerfile.prod -t $DOCKER_USERNAME/capstone-app:$CIRCLE_WORKFLOW_ID .
+      - run:
+          name: Scan Docker Image      
+          command: docker scan $DOCKER_USERNAME/capstone-app:$CIRCLE_WORKFLOW_ID
+      - run:
+          name: Push Docker Image
+          command: | 
             echo $DOCKER_PWD | docker login -u $DOCKER_USERNAME docker.io --password-stdin
-            docker push $DOCKER_USERNAME/capstone-app:$CIRCLE_WORKFLOW_ID
+            docker push $DOCKER_USERNAME/capstone-app:$CIRCLE_WORKFLOW_ID  
   deploy:
     docker:
       - image: amazon/aws-cli 
@@ -34,6 +84,12 @@ jobs:
 workflows:
   default-workflow:
     jobs:
-      - build
+      - build-frontend
+      - test-frontend:
+          reqiures: [build-frontend]
+      - scan-frontend:
+          requires: [build-frontend]
+      - build-docker:
+         requires: [scan-frontend,test-frontend]
       - deploy:
-         requires: [build]            
+         requires: [build-docker]
