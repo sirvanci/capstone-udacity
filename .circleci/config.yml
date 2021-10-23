@@ -1,0 +1,18 @@
+version: 2.1
+jobs:
+  build:
+    docker:
+      - image: circleci/node
+    steps:
+      - checkout
+      - run:
+          name: Build and push Docker image
+          command: |
+            cd capstone-rc-frontend
+            docker build -f Dockerfile.prod -t sirvanci/capstone-app:$CIRCLE_WORKFLOW_ID .
+            echo $DOCKER_PWD | docker login -u docker.io --password-stdin
+            #docker push sirvanci/capstone-app:$CIRCLE_WORKFLOW_ID
+workflows:
+  default-workflow:
+    jobs:
+      - build            
