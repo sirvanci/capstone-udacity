@@ -11,9 +11,20 @@ jobs:
           name: Build and push Docker image
           command: |
             cd capstone-rc-frontend
-            docker build -f Dockerfile.prod -t sirvanci/capstone-app:$CIRCLE_WORKFLOW_ID .
-            echo $DOCKER_PWD | docker login -u docker.io --password-stdin
-            #docker push sirvanci/capstone-app:$CIRCLE_WORKFLOW_ID
+            docker build -f Dockerfile.prod -t $DOCKER_USERNAME/capstone-app:$CIRCLE_WORKFLOW_ID .
+            echo $DOCKER_PWD | docker login -u $DOCKER_USERNAME docker.io --password-stdin
+            #docker push $DOCKER_USERNAME/capstone-app:$CIRCLE_WORKFLOW_ID
+  deploy:
+    docker:
+      - image: amazon/aws-cli 
+    steps:
+      - checkout
+      - run:
+          name: Setup kubeconfig
+          command: aws eks update-kubeconfig --region eu-central-1 --name capstone-eks-cluster
+      - run:
+         name: Start deployment
+         command: kubectl apply -f deployment.yaml
 workflows:
   default-workflow:
     jobs:
