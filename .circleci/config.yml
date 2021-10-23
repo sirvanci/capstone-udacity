@@ -13,12 +13,19 @@ jobs:
       - run:
           name: Install Dependecies & Build
           command: |
-            cd capstone-rc-frontend
-            npm install  
-            npm run build    
+            cd capstone-rc-frontend      
+            yarn install --immutable
+            yarn build    
       - save_cache:
+          name: Save Node Modules
           paths: [capstone-rc-frontend/node_modules]
-          key: frontend-build-{{ .Environment.CIRCLE_SHA1 }}      
+          key: frontend-build-{{ .Environment.CIRCLE_SHA1 }}
+      - save_cache:
+          name: Save Yarn Package Cache
+          key: yarn-packages-{{ checksum "yarn.lock" }}
+          paths:
+            - .yarn/cache
+            - .yarn/unplugged          
   test-frontend:
     docker:
       - image: circleci/node
@@ -27,26 +34,14 @@ jobs:
       - restore_cache:
           keys:
             - frontend-build-{{ .Environment.CIRCLE_SHA1 }}
+            - yarn-packages-{{ checksum "yarn.lock" }}
       - run:
           name: Run Tests
           command: |
-            cd capstone-rc-frontend             
-            CI=true npm test   
-  scan-frontend:
-    docker:
-      - image: circleci/node
-    steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - frontend-build-{{ .Environment.CIRCLE_SHA1 }}
-      - run:
-          name: Run Tests
-          command: |
-            cd capstone-rc-frontend             
-            npm audit fix --audit-level=critical --force            
+            cd capstone-rc-frontend            
+            CI=true yarn test             
 
-  build-docker:
+  build&push-docker:
     docker:
       - image: circleci/node
     steps:
@@ -87,9 +82,7 @@ workflows:
       - build-frontend
       - test-frontend:
           requires: [build-frontend]
-      - scan-frontend:
-          requires: [build-frontend]
-      - build-docker:
+      - build&push-docker:
          requires: [scan-frontend,test-frontend]
       - deploy:
-         requires: [build-docker]
+         requires: [build&push-docker]
