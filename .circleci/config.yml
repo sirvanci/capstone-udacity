@@ -79,7 +79,9 @@ jobs:
           command: aws eks update-kubeconfig --region eu-central-1 --name capstone-cluster2
       - run:
          name: Start deployment
-         command: kubectl apply -f deployment.yaml --VERSION="${CIRCLE_WORKFLOW_ID:0:6}"
+         command: |
+          sed -i 's/VERSION/$CIRCLE_WORKFLOW_ID/g' deployment.yaml 
+          kubectl apply -f deployment.yaml 
 workflows:
   default-workflow:
     jobs:
