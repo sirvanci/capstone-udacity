@@ -57,8 +57,11 @@ jobs:
             cd capstone-rc-frontend
             docker build -f Dockerfile.prod -t $DOCKER_USERNAME/capstone-app:$CIRCLE_WORKFLOW_ID .
       - run:
-          name: Scan Docker Image      
-          command: docker scan $DOCKER_USERNAME/capstone-app:$CIRCLE_WORKFLOW_ID
+          name: Lint Docker Image      
+          command: |
+            wget -O ./hadolint https://github.com/hadolint/hadolint/releases/download/v1.16.3/hadolint-Linux-x86_64
+            chmod +x ./hadolint 
+            ./hadolint $DOCKER_USERNAME/capstone-app:$CIRCLE_WORKFLOW_ID
       - run:
           name: Push Docker Image
           command: | 
