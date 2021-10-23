@@ -41,7 +41,7 @@ jobs:
             cd capstone-rc-frontend            
             CI=true yarn test             
 
-  build&push-docker:
+  build-push-docker:
     docker:
       - image: circleci/node
     steps:
@@ -82,7 +82,7 @@ workflows:
       - build-frontend
       - test-frontend:
           requires: [build-frontend]
-      - build&push-docker:
-         requires: [scan-frontend,test-frontend]
+      - build-push-docker:
+         requires: [test-frontend]
       - deploy:
-         requires: [build&push-docker]
+         requires: [build-push-docker]
