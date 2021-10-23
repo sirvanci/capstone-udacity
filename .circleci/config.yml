@@ -1,4 +1,8 @@
 version: 2.1
+
+orbs:
+  aws-cli: circleci/aws-cli@2.0.3
+
 jobs:
   build:
     docker:
@@ -13,7 +17,7 @@ jobs:
             cd capstone-rc-frontend
             docker build -f Dockerfile.prod -t $DOCKER_USERNAME/capstone-app:$CIRCLE_WORKFLOW_ID .
             echo $DOCKER_PWD | docker login -u $DOCKER_USERNAME docker.io --password-stdin
-            #docker push $DOCKER_USERNAME/capstone-app:$CIRCLE_WORKFLOW_ID
+            docker push $DOCKER_USERNAME/capstone-app:$CIRCLE_WORKFLOW_ID
   deploy:
     docker:
       - image: amazon/aws-cli 
@@ -28,4 +32,5 @@ jobs:
 workflows:
   default-workflow:
     jobs:
-      - build            
+      - build
+      - deploy            
