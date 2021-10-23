@@ -80,9 +80,9 @@ jobs:
       - run:
          name: Start deployment
          command: |
-          sed -i 's/VERSION/$CIRCLE_WORKFLOW_ID/g' deployment.yaml
+          sed -i 's@VERSION@'"$CIRCLE_WORKFLOW_ID"'@' deployment.yaml
           cat deployment.yaml
-          kubectl apply -f deployment.yaml 
+          kubectl apply -f deployment.yaml
 workflows:
   default-workflow:
     jobs:
