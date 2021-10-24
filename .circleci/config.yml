@@ -111,7 +111,9 @@ jobs:
       - run:
           name: Run Smoke Test | UAT
           command: |
+            sleep 15
             export EXTERNAL_IP=$(kubectl get svc loadbalancer-green -o jsonpath="{.status.loadBalancer.ingress[*].hostname}")
+            echo $EXTERNAL_IP
             if curl -s http://$EXTERNAL_IP:5000
             then
               exit 0
