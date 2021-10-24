@@ -3,7 +3,14 @@ version: 2.1
 orbs:
   aws-cli: circleci/aws-cli@2.0.3
   kubernetes: circleci/kubernetes@0.12.0
-
+ 
+commands:
+    kubeconfig:
+      description: Fetch EKS-Cluster kubeconfig
+      steps:
+       - run:
+          name: Setup kubeconfig
+          command: aws eks update-kubeconfig --region eu-central-1 --name capstone-cluster2
 jobs:
   build-frontend:
     docker:
@@ -68,21 +75,116 @@ jobs:
           command: | 
             echo $DOCKER_PWD | docker login -u $DOCKER_USERNAME docker.io --password-stdin
             docker push $DOCKER_USERNAME/capstone-app:$CIRCLE_WORKFLOW_ID  
-  deploy:
+  deploy-green:
     docker:
       - image: amazon/aws-cli 
     steps:
       - checkout
       - kubernetes/install-kubectl
+      - kubeconfig
       - run:
-          name: Setup kubeconfig
-          command: aws eks update-kubeconfig --region eu-central-1 --name capstone-cluster2
-      - run:
-         name: Start deployment
+         name: Deploy new version
          command: |
           sed -i 's@VERSION@'"$CIRCLE_WORKFLOW_ID"'@' deployment.yaml
           cat deployment.yaml
           kubectl apply -f deployment.yaml
+  deploy-green-lb:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - kubernetes/install-kubectl
+      - kubeconfig
+      - run:
+          name: Deploy Green Load Balancer
+          command: |
+            sed -i 's@VERSION@'"$CIRCLE_WORKFLOW_ID"'@' load-balancer-green.yaml
+            cat load-balancer-green.yaml
+            kubectl apply -f load-balancer-green.yaml
+  test-green-deployment:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - kubernetes/install-kubectl
+      - kubeconfig
+      - run:
+          name: Run Smoke Test | UAT
+          command: |
+            export EXTERNAL_IP=$(kubectl get svc loadbalancer-green -o jsonpath="{.status.loadBalancer.ingress[*].ip}")
+            if curl -s http://EXTERNAL_IP:5000
+            then
+              exit 0
+            else
+              exit 1
+            fi  
+      - run:  
+          name: destroy-green-deployment
+          when: on_fail
+          command: |
+            sed -i 's@VERSION@'"$CIRCLE_WORKFLOW_ID"'@' load-balancer-green.yaml
+            kubectl delete -f load-balancer-green.yaml
+            sed -i 's@VERSION@'"$CIRCLE_WORKFLOW_ID"'@' deployment.yaml
+            kubectl delete -f deployment.yaml
+  promote-production:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - kubernetes/install-kubectl
+      - kubeconfig
+      - run:
+          name: Update Blue LoadBalancer
+          command: |
+            sed -i 's@VERSION@'"$CIRCLE_WORKFLOW_ID"'@' load-balancer-blue.yaml
+            cat load-balancer-blue.yaml
+            kubectl apply -f load-balancer-blue.yaml
+  smoke-test-production:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - kubernetes/install-kubectl
+      - kubeconfig
+      - run:
+          name: Smoke Test Production 
+          command: |
+            export EXTERNAL_IP=$(kubectl get svc loadbalancer-blue -o jsonpath="{.status.loadBalancer.ingress[*].ip}")
+            if curl -s http://EXTERNAL_IP
+            then
+              exit 0
+            else
+              exit 1
+            fi
+      - run:
+          name: Error Rollback   
+          when: on_fail                
+          command: |
+            kubectl rollout undo deploy load-balancer-blue.yaml 
+  clean-up:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - kubernetes/install-kubectl
+      - kubeconfig
+      - run:
+          name: Delete Green LoadBalancer
+          command: |
+            kubectl delete -f load-balancer-green.yaml
+      - run:
+          name: Delete Blue Deployment
+          command: |
+            export OLD_ID=$(curl -H "token: c5afee37-55fd-4f36-9755-26c740fd6fcf" --request GET https://api.memstash.io/values/capstone-app-version)
+            sed -i 's@VERSION@'"$OLD_ID"'@' deployment.yaml
+            kubectl delete -f deployment.yaml
+      - run:
+          name: Send New App Version To MemCache
+          command: |
+            curl -H "Content-Type: text/plain" -H "token: c5afee37-55fd-4f36-9755-26c740fd6fcf" \
+              --request PUT \
+              --data "$CIRCLE_WORKFLOW_ID" \
+              https://api.memstash.io/values/capstone-app-version  
 workflows:
   default-workflow:
     jobs:
@@ -91,5 +193,14 @@ workflows:
           requires: [build-frontend]
       - build-push-docker:
          requires: [test-frontend]
-      - deploy:
+      - deploy-green:
          requires: [build-push-docker]
+      - deploy-green-lb:
+         requires: [build-push-docker]
+      - test-green-deployment:
+         requires: [deploy-green,deploy-green-lb]
+      - promote-production:
+         requires: [test-green-deployment]
+      - smoke-test-production:
+          requires: [promote-production]
+      - clean-up    
