@@ -115,6 +115,9 @@ jobs:
             sleep 45
             export EXTERNAL_IP=$(kubectl get svc loadbalancer-green -o jsonpath="{.status.loadBalancer.ingress[*].hostname}")
             echo $EXTERNAL_IP
+            sleep 10
+            curl -s -I http://$EXTERNAL_IP:8080
+            sleep 10
             if curl -sSf http://$EXTERNAL_IP:8080 > /dev/null
             then
               exit 0
