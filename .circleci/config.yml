@@ -98,7 +98,7 @@ jobs:
       - run:
           name: Deploy Green Load Balancer
           command: |
-            sed -i 's@VERSION@'"$CIRCLE_WORKFLOW_ID"'@' load-balancer-green.yaml
+            sed -i 's@VERSION@'"3f6fadf6-ba74-4fd6-aca8-c8c185bd84db"'@' load-balancer-green.yaml
             cat load-balancer-green.yaml
             kubectl apply -f load-balancer-green.yaml
   test-green-deployment:
@@ -114,7 +114,7 @@ jobs:
             sleep 15
             export EXTERNAL_IP=$(kubectl get svc loadbalancer-green -o jsonpath="{.status.loadBalancer.ingress[*].hostname}")
             echo $EXTERNAL_IP
-            if curl -s http://$EXTERNAL_IP:5000
+            if curl -s http://$EXTERNAL_IP:8080
             then
               exit 0
             else
