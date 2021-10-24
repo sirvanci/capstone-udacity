@@ -98,6 +98,7 @@ jobs:
       - run:
           name: Deploy Green Load Balancer
           command: |
+            sleep 15
             sed -i 's@VERSION@'"3f6fadf6-ba74-4fd6-aca8-c8c185bd84db"'@' load-balancer-green.yaml
             cat load-balancer-green.yaml
             kubectl apply -f load-balancer-green.yaml
@@ -116,11 +117,18 @@ jobs:
             echo $EXTERNAL_IP
             if curl -sSf http://$EXTERNAL_IP:8080 > /dev/null
             then
-              echo 0
+              exit 0
             else
-              echo 1
+              exit 1
             fi  
-  
+      - run:  
+          name: destroy-green-deployment
+          when: on_fail
+          command: |
+            sed -i 's@VERSION@'"$CIRCLE_WORKFLOW_ID"'@' load-balancer-green.yaml
+            kubectl delete -f load-balancer-green.yaml
+            sed -i 's@VERSION@'"$CIRCLE_WORKFLOW_ID"'@' deployment.yaml
+            kubectl delete -f deployment.yaml
   promote-production:
     docker:
       - image: amazon/aws-cli
