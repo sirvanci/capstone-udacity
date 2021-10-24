@@ -9,7 +9,7 @@ spec:
         version: "VERSION"
     ports:
     - protocol: TCP
-      port: 8080
+      port: 5000
       targetPort: 80
     
     
