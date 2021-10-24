@@ -151,6 +151,7 @@ jobs:
       - run:
           name: Smoke Test Production 
           command: |
+            sleep 15
             export EXTERNAL_IP=$(kubectl get svc loadbalancer-blue -o jsonpath="{.status.loadBalancer.ingress[*].hostname}")
             if curl -s http://$EXTERNAL_IP
             then
@@ -162,7 +163,12 @@ jobs:
           name: Error Rollback   
           when: on_fail                
           command: |
-            kubectl rollout undo deploy load-balancer-blue.yaml 
+            kubectl rollout undo deploy load-balancer-blue.yaml
+            sed -i 's@VERSION@'"$CIRCLE_WORKFLOW_ID"'@' load-balancer-green.yaml
+            kubectl delete -f load-balancer-green.yaml
+            sed -i 's@VERSION@'"$CIRCLE_WORKFLOW_ID"'@' deployment.yaml
+            kubectl delete -f deployment.yaml
+
   clean-up:
     docker:
       - image: amazon/aws-cli
