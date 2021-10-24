@@ -203,4 +203,5 @@ workflows:
          requires: [test-green-deployment]
       - smoke-test-production:
           requires: [promote-production]
-      - clean-up    
+      - clean-up:
+          requires: [smoke-test-production]  
