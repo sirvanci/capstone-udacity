@@ -120,14 +120,7 @@ jobs:
             else
               exit 1
             fi  
-      - run:  
-          name: destroy-green-deployment
-          when: on_fail
-          command: |
-            sed -i 's@VERSION@'"$CIRCLE_WORKFLOW_ID"'@' load-balancer-green.yaml
-            kubectl delete -f load-balancer-green.yaml
-            sed -i 's@VERSION@'"$CIRCLE_WORKFLOW_ID"'@' deployment.yaml
-            kubectl delete -f deployment.yaml
+  
   promote-production:
     docker:
       - image: amazon/aws-cli
