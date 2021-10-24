@@ -198,9 +198,9 @@ workflows:
       - deploy-green:
          requires: [build-push-docker]
       - deploy-green-lb:
-         requires: [build-push-docker]
+         requires: [deploy-green]
       - test-green-deployment:
-         requires: [deploy-green,deploy-green-lb]
+         requires: [deploy-green-lb]
       - promote-production:
          requires: [test-green-deployment]
       - smoke-test-production:
