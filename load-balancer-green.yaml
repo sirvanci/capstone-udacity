@@ -5,11 +5,11 @@ metadata:
 spec:
     type: LoadBalancer
     selector:
-        app: capstone-app-VERSION
+        app: capstone-app
         version: "VERSION"
     ports:
-    - port: 5000
-      protocol: TCP
+    - protocol: TCP
+      port: 8080
       targetPort: 80
     
     
