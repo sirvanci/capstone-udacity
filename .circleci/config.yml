@@ -98,7 +98,6 @@ jobs:
       - run:
           name: Deploy Green Load Balancer
           command: |
-            sleep 15
             sed -i 's@VERSION@'"$CIRCLE_WORKFLOW_ID"'@' load-balancer-green.yaml
             cat load-balancer-green.yaml
             kubectl apply -f load-balancer-green.yaml
@@ -112,7 +111,7 @@ jobs:
       - run:
           name: Run Smoke Test | UAT
           command: |
-            sleep 45
+            sleep 120
             export EXTERNAL_IP=$(kubectl get svc loadbalancer-green -o jsonpath="{.status.loadBalancer.ingress[*].hostname}")
             echo $EXTERNAL_IP
             if curl -sSf http://$EXTERNAL_IP:8080 > /dev/null
