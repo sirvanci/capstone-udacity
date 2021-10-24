@@ -112,7 +112,7 @@ jobs:
           name: Run Smoke Test | UAT
           command: |
             export EXTERNAL_IP=$(kubectl get svc loadbalancer-green -o jsonpath="{.status.loadBalancer.ingress[*].hostname}")
-            if curl -s http://EXTERNAL_IP:5000
+            if curl -s http://$EXTERNAL_IP:5000
             then
               exit 0
             else
@@ -150,7 +150,7 @@ jobs:
           name: Smoke Test Production 
           command: |
             export EXTERNAL_IP=$(kubectl get svc loadbalancer-blue -o jsonpath="{.status.loadBalancer.ingress[*].hostname}")
-            if curl -s http://EXTERNAL_IP
+            if curl -s http://$EXTERNAL_IP
             then
               exit 0
             else

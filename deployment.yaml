@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: capstone-app-VERSION
 spec:
-  replicas: 3
+  replicas: 4
   selector:
     matchLabels:
       app: capstone-app
